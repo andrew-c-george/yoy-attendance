@@ -1,0 +1,2 @@
+Place tableau.extensions.1.latest.min.js in this folder.
+See README.md, step 2.
