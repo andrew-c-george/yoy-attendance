@@ -8,7 +8,7 @@
     worksheetName: 'AttendanceData', // name of the worksheet that feeds this extension
     pageSize: 10000,                 // rows per page when reading worksheet data
     // Campuses left out by default (non-physical campuses). Matching ignores case, spaces, and punctuation.
-    excludedCampuses: ['Beechmont', 'Multination', 'SE Online', 'SE Recovery']
+    excludedCampuses: ['Beechmont Center', 'Multination Fellowship', 'SE Online', 'SE Recovery']
   };
 
   var DAY = 86400000;
