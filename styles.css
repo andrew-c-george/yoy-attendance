@@ -34,7 +34,7 @@ button, input, select { font-family: inherit; }
 
 .campus-wrap { position: relative; display: flex; flex-direction: column; gap: 6px; }
 .campus-btn { font-size: 15px; height: 44px; min-width: 250px; padding: 0 12px; border: 1px solid #9CA3AF; border-radius: 8px; background: #FFFFFF; color: #111827; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; }
-.campus-panel { position: absolute; top: 76px; left: 0; z-index: 20; width: 300px; background: #FFFFFF; border: 1px solid #9CA3AF; border-radius: 10px; box-shadow: 0 8px 24px rgba(17, 24, 39, 0.18); padding: 8px; display: flex; flex-direction: column; gap: 4px; }
+.campus-panel { position: absolute; top: 76px; left: 0; z-index: 20; width: 340px; background: #FFFFFF; border: 1px solid #9CA3AF; border-radius: 10px; box-shadow: 0 8px 24px rgba(17, 24, 39, 0.18); padding: 8px; display: flex; flex-direction: column; gap: 4px; }
 .campus-panel .tools { display: flex; gap: 8px; padding: 4px 4px 8px; border-bottom: 1px solid #E5E7EB; }
 .campus-list { max-height: 308px; overflow-y: auto; display: flex; flex-direction: column; }
 .campus-item { display: flex; align-items: center; gap: 12px; width: 100%; height: 44px; padding: 0 8px; border: 0; background: transparent; font-size: 15px; color: #111827; text-align: left; cursor: pointer; }

@@ -6,7 +6,9 @@
   // ------------------------------------------------------------------
   var CONFIG = {
     worksheetName: 'AttendanceData', // name of the worksheet that feeds this extension
-    pageSize: 10000                  // rows per page when reading worksheet data
+    pageSize: 10000,                 // rows per page when reading worksheet data
+    // Campuses left out by default (non-physical campuses). Matching ignores case, spaces, and punctuation.
+    excludedCampuses: ['Beechmont', 'Multination', 'SE Online', 'SE Recovery']
   };
 
   var DAY = 86400000;
@@ -33,7 +35,7 @@
     minWeek: null,
     maxWeek: null,
     check: null,
-    preset: 'ytd',
+    preset: '4w',
     start: null,
     end: null,
     kidsOpen: false,
@@ -53,6 +55,22 @@
     });
   }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function normName(s) { return String(s).toLowerCase().replace(/[^a-z0-9]/g, ''); }
+  function defaultCampusSet() {
+    var ex = new Set(CONFIG.excludedCampuses.map(normName));
+    var set = new Set(state.campuses.filter(function (c) { return !ex.has(normName(c)); }));
+    return set.size ? set : new Set(state.campuses);
+  }
+  function sameSet(a, b) {
+    if (a.size !== b.size) return false;
+    var same = true;
+    a.forEach(function (v) { if (!b.has(v)) same = false; });
+    return same;
+  }
+  function missingExclusions() {
+    var present = new Set(state.campuses.map(normName));
+    return CONFIG.excludedCampuses.filter(function (n) { return !present.has(normName(n)); });
+  }
   function iso(ms) {
     var d = new Date(ms);
     return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate());
@@ -184,8 +202,8 @@
     var previous = state.selected;
     state.rows = rows;
     state.campuses = campuses;
-    state.selected = new Set(campuses.filter(function (c) { return previous.size === 0 || previous.has(c); }));
-    if (state.selected.size === 0) state.selected = new Set(campuses);
+    var kept = new Set(campuses.filter(function (c) { return previous.has(c); }));
+    state.selected = kept.size ? kept : defaultCampusSet();
     state.minWeek = minW;
     state.maxWeek = maxW;
     state.check = { rows: rows.length, badDates: badDates, nonSunday: nonSunday };
@@ -402,7 +420,8 @@
   function filtersHtml() {
     var total = state.campuses.length;
     var count = state.selected.size;
-    var summary = count === total ? 'All campuses (' + total + ')' : (count === 0 ? 'No campuses selected' : count + ' of ' + total + ' campuses');
+    var isDefault = sameSet(state.selected, defaultCampusSet());
+    var summary = (isDefault && count !== total) ? 'Physical campuses (' + count + ')' : (count === total ? 'All campuses (' + total + ')' : (count === 0 ? 'No campuses selected' : count + ' of ' + total + ' campuses'));
     var panel = '';
     if (state.campusOpen) {
       var items = state.campuses.map(function (c, i) {
@@ -413,6 +432,7 @@
       }).join('');
       panel = '<div class="campus-panel"><div class="tools">' +
         '<button class="btn link" data-action="campus-all" data-fid="campus-all">Select all</button>' +
+        '<button class="btn link" data-action="campus-physical" data-fid="campus-physical">Physical only</button>' +
         '<button class="btn link" data-action="campus-none" data-fid="campus-none">Clear</button></div>' +
         '<div class="campus-list">' + items + '</div></div>';
     }
@@ -508,7 +528,8 @@
     var warn = ck && (ck.badDates > 0 || ck.nonSunday > 0);
     html += '<div class="footer">Weekly average = total attendance for each Sunday-dated week, averaged across the weeks in the period that have attendance. ' +
       '% change = (current weekly average minus prior weekly average) divided by prior weekly average. Monday through Saturday services roll to the following Sunday. Kids is Early Childhood plus Elementary.<br>' +
-      'Data check: ' + (ck ? nf.format(ck.rows) : '0') + ' rows, ' + state.campuses.length + ' campuses, weeks ' + fmtDate(state.minWeek, true) + ' to ' + fmtDate(state.maxWeek, true) + '.' +
+      'Data check: ' + (ck ? nf.format(ck.rows) : '0') + ' rows, ' + state.campuses.length + ' campuses, weeks ' + fmtDate(state.minWeek, true) + ' to ' + fmtDate(state.maxWeek, true) + '. Physical campuses exclude: ' + esc(CONFIG.excludedCampuses.join(', ')) + '.' +
+      (missingExclusions().length ? ' <span class="warn">Not found in the data: ' + esc(missingExclusions().join(', ')) + '.</span>' : '') +
       (warn ? ' <span class="warn">' + ck.nonSunday + ' dates are not Sundays and ' + ck.badDates + ' dates could not be read. Check the SundayKey calculation.</span>' : '') +
       '</div>';
 
@@ -532,6 +553,7 @@
       var name = state.campuses[+t.getAttribute('data-index')];
       if (state.selected.has(name)) state.selected.delete(name); else state.selected.add(name);
     } else if (a === 'campus-all') state.selected = new Set(state.campuses);
+    else if (a === 'campus-physical') state.selected = defaultCampusSet();
     else if (a === 'campus-none') state.selected = new Set();
     else if (a === 'preset') applyPreset(t.getAttribute('data-value'));
     else if (a === 'kids-toggle') state.kidsOpen = !state.kidsOpen;
@@ -599,7 +621,7 @@
       await tableau.extensions.initializeAsync();
       await loadData();
       state.loading = false;
-      applyPreset('ytd');
+      applyPreset('4w');
     } catch (err) {
       state.loading = false;
       state.error = err && err.message ? err.message : String(err);
